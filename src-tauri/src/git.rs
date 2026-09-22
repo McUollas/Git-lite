@@ -147,6 +147,28 @@ pub fn unstage_all(state: State<RepoState>) -> Result<(), String> {
 }
 
 #[tauri::command(async)]
+pub fn discard_file(path: String, state: State<RepoState>) -> Result<(), String> {
+    let repo = current_repo(&state)?;
+    let status = status_inner(&repo)?;
+    let file = status
+        .files
+        .iter()
+        .find(|f| f.path == path)
+        .ok_or_else(|| "File non trovato nello stato del repository".to_string())?;
+    if file.index == "?" && file.worktree == "?" {
+        // Mai aggiunto a git: non c'è nessuna versione precedente a cui tornare,
+        // "annullare le modifiche" significa buttare via il file stesso.
+        std::fs::remove_file(repo.join(&path)).map_err(|e| e.to_string())?;
+    } else {
+        // Riporta sia l'index che il working tree alla versione di HEAD: funziona
+        // sia per modifiche in stage che non, e per un file nuovo già "add"-ato
+        // (mai committato) lo elimina, dato che in HEAD non esiste.
+        run_git(&repo, &["restore", "--staged", "--worktree", "--", &path])?;
+    }
+    Ok(())
+}
+
+#[tauri::command(async)]
 pub fn commit(message: String, state: State<RepoState>) -> Result<(), String> {
     let repo = current_repo(&state)?;
     if message.trim().is_empty() {
@@ -375,6 +397,15 @@ pub fn clone_repo(url: String, dest_dir: String) -> Result<String, String> {
 }
 
 #[tauri::command(async)]
+pub fn set_upstream(branch: String, state: State<RepoState>) -> Result<String, String> {
+    let repo = current_repo(&state)?;
+    run_git(
+        &repo,
+        &["branch", "--set-upstream-to", &format!("origin/{branch}"), &branch],
+    )
+}
+
+#[tauri::command(async)]
 pub fn pull_branch(name: String, state: State<RepoState>) -> Result<String, String> {
     let repo = current_repo(&state)?;
     let status = status_inner(&repo)?;
@@ -389,15 +420,26 @@ pub fn pull_branch(name: String, state: State<RepoState>) -> Result<String, Stri
 }
 
 #[tauri::command(async)]
-pub fn push(state: State<RepoState>) -> Result<String, String> {
+pub fn push(force: bool, state: State<RepoState>) -> Result<String, String> {
     let repo = current_repo(&state)?;
-    run_git(&repo, &["push"])
+    let mut args = vec!["push"];
+    if force {
+        args.push("--force");
+    }
+    run_git(&repo, &args)
 }
 
 #[tauri::command(async)]
-pub fn pull(state: State<RepoState>) -> Result<String, String> {
+pub fn pull(strategy: Option<String>, state: State<RepoState>) -> Result<String, String> {
     let repo = current_repo(&state)?;
-    run_git(&repo, &["pull"])
+    let mut args = vec!["pull"];
+    match strategy.as_deref() {
+        Some("merge") => args.push("--no-rebase"),
+        Some("rebase") => args.push("--rebase"),
+        Some("ff-only") => args.push("--ff-only"),
+        _ => {}
+    }
+    run_git(&repo, &args)
 }
 
 #[tauri::command(async)]

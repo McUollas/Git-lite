@@ -10,6 +10,7 @@ import { ConflictModal } from "./components/ConflictModal";
 import { ContextMenu, ContextMenuItem } from "./components/ContextMenu";
 import { NewBranchDialog } from "./components/NewBranchDialog";
 import { ConfirmDialog } from "./components/ConfirmDialog";
+import { ReconcileDialog } from "./components/ReconcileDialog";
 import { CloneDialog } from "./components/CloneDialog";
 import { CredentialDialog } from "./components/CredentialDialog";
 import { RepoTabs } from "./components/RepoTabs";
@@ -98,6 +99,16 @@ export default function App() {
   const [newBranchFrom, setNewBranchFrom] = useState<string | null>(null);
   const [deleteBranchTarget, setDeleteBranchTarget] = useState<string | null>(null);
   const [forceDeleteBranchTarget, setForceDeleteBranchTarget] = useState<string | null>(null);
+  const [upstreamPrompt, setUpstreamPrompt] = useState<{
+    branch: string;
+    kind: "pull" | "update";
+  } | null>(null);
+  const [divergedPrompt, setDivergedPrompt] = useState<{
+    branch: string;
+    kind: "pull" | "update";
+  } | null>(null);
+  const [showForcePushConfirm, setShowForcePushConfirm] = useState(false);
+  const [discardTarget, setDiscardTarget] = useState<string | null>(null);
   const [showCloneDialog, setShowCloneDialog] = useState(false);
   const [credentialPrompt, setCredentialPrompt] = useState<{
     action: "push" | "pull";
@@ -330,6 +341,7 @@ export default function App() {
   const doUnstage = (path: string) => withBusy(() => api.unstageFile(path).then(() => {}));
   const doStageAll = () => withBusy(() => api.stageAll());
   const doUnstageAll = () => withBusy(() => api.unstageAll());
+  const doDiscardFile = (path: string) => withBusy(() => api.discardFile(path));
   const doCommit = (msg: string, pushAfter: boolean) =>
     withBusy(async () => {
       await api.commit(msg);
@@ -369,10 +381,25 @@ export default function App() {
     );
   }
 
+  function isNoUpstreamError(msg: string): boolean {
+    return /no tracking information for the current branch/i.test(msg);
+  }
+
+  function isDivergedError(msg: string): boolean {
+    return /need to specify how to reconcile divergent branches/i.test(msg);
+  }
+
+  function isRejectedPushError(msg: string): boolean {
+    return /\[rejected\]|failed to push some refs/i.test(msg);
+  }
+
   async function runGitAction(
     fn: () => Promise<string>,
     onAuthFailure?: () => void,
     loadingLabel?: string,
+    onNoUpstream?: () => void,
+    onDiverged?: () => void,
+    onRejected?: () => void,
   ) {
     setBusy(true);
     if (loadingLabel) showLoading(loadingLabel);
@@ -383,6 +410,12 @@ export default function App() {
       const msg = errorMessage(e);
       if (onAuthFailure && isAuthError(msg)) {
         onAuthFailure();
+      } else if (onNoUpstream && isNoUpstreamError(msg)) {
+        onNoUpstream();
+      } else if (onDiverged && isDivergedError(msg)) {
+        onDiverged();
+      } else if (onRejected && isRejectedPushError(msg)) {
+        onRejected();
       } else {
         showError(msg);
       }
@@ -398,6 +431,9 @@ export default function App() {
       () => api.push(),
       () => setCredentialPrompt({ action: "push", branch: status.branch }),
       "Pushing...",
+      undefined,
+      undefined,
+      () => setShowForcePushConfirm(true),
     );
   }
   const doPull = () =>
@@ -405,6 +441,8 @@ export default function App() {
       () => api.pull(),
       () => setCredentialPrompt({ action: "pull", branch: status.branch }),
       "Pulling...",
+      () => setUpstreamPrompt({ branch: status.branch, kind: "pull" }),
+      () => setDivergedPrompt({ branch: status.branch, kind: "pull" }),
     );
   const doFetchAll = () => runGitAction(() => api.fetchAll(), undefined, "Fetching...");
   const doUpdate = () =>
@@ -415,6 +453,8 @@ export default function App() {
       },
       () => setCredentialPrompt({ action: "pull", branch: status.branch }),
       "Updating...",
+      () => setUpstreamPrompt({ branch: status.branch, kind: "update" }),
+      () => setDivergedPrompt({ branch: status.branch, kind: "update" }),
     );
   const doPushBranch = (name: string) =>
     runGitAction(
@@ -647,6 +687,7 @@ export default function App() {
             onUnstage={doUnstage}
             onStageAll={doStageAll}
             onUnstageAll={doUnstageAll}
+            onDiscard={(path) => setDiscardTarget(path)}
             onCommit={doCommit}
             busy={busy}
           />
@@ -715,6 +756,18 @@ export default function App() {
           }}
         />
       )}
+      {discardTarget && (
+        <ConfirmDialog
+          title="Annulla modifiche"
+          message={`Annullare le modifiche a "${discardTarget}"? Se il file non è mai stato committato verrà eliminato dal disco. L'operazione non è reversibile.`}
+          confirmLabel="Annulla modifiche"
+          onCancel={() => setDiscardTarget(null)}
+          onConfirm={() => {
+            doDiscardFile(discardTarget);
+            setDiscardTarget(null);
+          }}
+        />
+      )}
       {forceDeleteBranchTarget && (
         <ConfirmDialog
           title="Branch non mergiato"
@@ -727,6 +780,47 @@ export default function App() {
           }}
         />
       )}
+      {upstreamPrompt && (
+        <ConfirmDialog
+          title="Nessun branch remoto collegato"
+          message={`Il branch "${upstreamPrompt.branch}" non ha un branch remoto associato. Vuoi impostarlo su "origin/${upstreamPrompt.branch}" e continuare?`}
+          confirmLabel="Imposta e continua"
+          onCancel={() => setUpstreamPrompt(null)}
+          onConfirm={() => {
+            const { branch, kind } = upstreamPrompt;
+            setUpstreamPrompt(null);
+            runGitAction(
+              async () => {
+                await api.setUpstream(branch);
+                if (kind === "update") await api.fetchAll();
+                return await api.pull();
+              },
+              undefined,
+              kind === "update" ? "Updating..." : "Pulling...",
+              undefined,
+              () => setDivergedPrompt({ branch, kind }),
+            );
+          }}
+        />
+      )}
+      {divergedPrompt && (
+        <ReconcileDialog
+          branch={divergedPrompt.branch}
+          onCancel={() => setDivergedPrompt(null)}
+          onChoose={(strategy) => {
+            const { kind } = divergedPrompt;
+            setDivergedPrompt(null);
+            runGitAction(
+              async () => {
+                if (kind === "update") await api.fetchAll();
+                return await api.pull(strategy);
+              },
+              undefined,
+              kind === "update" ? "Updating..." : "Pulling...",
+            );
+          }}
+        />
+      )}
       {showPushConfirm && (
         <ConfirmDialog
           title="Push"
@@ -734,6 +828,22 @@ export default function App() {
           confirmLabel="Push"
           onCancel={() => setShowPushConfirm(false)}
           onConfirm={confirmPush}
+        />
+      )}
+      {showForcePushConfirm && (
+        <ConfirmDialog
+          title="Push rifiutato: forzare?"
+          message={`Il remote ha commit che il locale non ha (storie divergenti o slegate): un push normale del branch "${status.branch}" viene rifiutato. Forzare il push sovrascrive la storia sul remote con quella locale, cancellando per sempre quello che c'era prima lì. Procedere solo se sei sicuro che il locale sia la versione da tenere.`}
+          confirmLabel="Forza push"
+          onCancel={() => setShowForcePushConfirm(false)}
+          onConfirm={() => {
+            setShowForcePushConfirm(false);
+            runGitAction(
+              () => api.push(true),
+              () => setCredentialPrompt({ action: "push", branch: status.branch }),
+              "Pushing (force)...",
+            );
+          }}
         />
       )}
       {showCloneDialog && (

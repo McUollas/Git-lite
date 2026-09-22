@@ -983,6 +983,10 @@ ul {
   padding: 0 6px;
   font-size: 12px;
 }
+.file-list .discard-btn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
 .file-list-empty {
   padding: 10px 4px;
   color: var(--text-dim);
@@ -1183,6 +1187,15 @@ ul {
   margin-top: 8px;
   display: flex;
   gap: 8px;
+}
+.reconcile-actions {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.reconcile-actions button {
+  text-align: left;
 }
 
 .context-menu {

@@ -70,6 +70,7 @@ export const api = {
   unstageFile: (path: string) => invoke<void>("unstage_file", { path }),
   stageAll: () => invoke<void>("stage_all"),
   unstageAll: () => invoke<void>("unstage_all"),
+  discardFile: (path: string) => invoke<void>("discard_file", { path }),
   commit: (message: string) => invoke<void>("commit", { message }),
   getIdentity: () => invoke<Identity>("get_identity"),
   getBranches: () => invoke<Branch[]>("get_branches"),
@@ -77,9 +78,10 @@ export const api = {
   createBranch: (name: string) => invoke<void>("create_branch", { name }),
   createBranchFrom: (name: string, startPoint: string) =>
     invoke<void>("create_branch_from", { name, startPoint }),
-  push: () => invoke<string>("push"),
-  pull: () => invoke<string>("pull"),
+  push: (force = false) => invoke<string>("push", { force }),
+  pull: (strategy?: "merge" | "rebase" | "ff-only") => invoke<string>("pull", { strategy }),
   fetchAll: () => invoke<string>("fetch_all"),
+  setUpstream: (branch: string) => invoke<string>("set_upstream", { branch }),
   pushBranch: (name: string) => invoke<string>("push_branch", { name }),
   pullBranch: (name: string) => invoke<string>("pull_branch", { name }),
   deleteBranch: (name: string, force = false) =>

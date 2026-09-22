@@ -11,6 +11,7 @@ interface Props {
   onUnstage: (path: string) => void;
   onStageAll: () => void;
   onUnstageAll: () => void;
+  onDiscard: (path: string) => void;
   onCommit: (message: string, pushAfter: boolean) => void;
   busy: boolean;
 }
@@ -25,6 +26,7 @@ export function StatusPanel({
   onUnstage,
   onStageAll,
   onUnstageAll,
+  onDiscard,
   onCommit,
   busy,
 }: Props) {
@@ -65,6 +67,16 @@ export function StatusPanel({
               <span className="tag">{statusLabel(f)}</span>
               <span className="file-path">{f.path}</span>
               <button
+                className="stage-btn discard-btn"
+                title="Annulla modifiche"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDiscard(f.path);
+                }}
+              >
+                ↺
+              </button>
+              <button
                 className="stage-btn"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -95,6 +107,16 @@ export function StatusPanel({
             >
               <span className="tag">{statusLabel(f)}</span>
               <span className="file-path">{f.path}</span>
+              <button
+                className="stage-btn discard-btn"
+                title="Annulla modifiche"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDiscard(f.path);
+                }}
+              >
+                ↺
+              </button>
               <button
                 className="stage-btn"
                 onClick={(e) => {
