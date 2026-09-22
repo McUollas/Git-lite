@@ -325,11 +325,13 @@ export default function App() {
     }
   }
 
-  async function withBusy(fn: () => Promise<void>) {
+  async function withBusy(fn: () => Promise<void>, loadingLabel?: string, successLabel?: string) {
     setBusy(true);
+    if (loadingLabel) showLoading(loadingLabel);
     try {
       await fn();
       await refresh();
+      if (successLabel) showSuccess(successLabel);
     } catch (e) {
       showError(errorMessage(e));
     } finally {
@@ -343,21 +345,25 @@ export default function App() {
   const doUnstageAll = () => withBusy(() => api.unstageAll());
   const doDiscardFile = (path: string) => withBusy(() => api.discardFile(path));
   const doCommit = (msg: string, pushAfter: boolean) =>
-    withBusy(async () => {
-      await api.commit(msg);
-      setSelected(null);
-      if (!pushAfter) return;
-      try {
-        await api.push();
-      } catch (e) {
-        const authMsg = errorMessage(e);
-        if (isAuthError(authMsg)) {
-          setCredentialPrompt({ action: "push", branch: status.branch });
-        } else {
-          throw e;
+    withBusy(
+      async () => {
+        await api.commit(msg);
+        setSelected(null);
+        if (!pushAfter) return;
+        try {
+          await api.push();
+        } catch (e) {
+          const authMsg = errorMessage(e);
+          if (isAuthError(authMsg)) {
+            setCredentialPrompt({ action: "push", branch: status.branch });
+          } else {
+            throw e;
+          }
         }
-      }
-    });
+      },
+      "Committing...",
+      "Commit completato",
+    );
   const doCheckout = (name: string) => withBusy(() => api.checkoutBranch(name));
   const doCreateBranchFrom = (name: string, startPoint: string) =>
     withBusy(() => api.createBranchFrom(name, startPoint));
@@ -590,9 +596,7 @@ export default function App() {
         onClone={() => setShowCloneDialog(true)}
       />
       <div className="topbar">
-        <span className="repo-path" title={activeRepo ?? ""}>
-          {activeRepo ? basename(activeRepo) : ""}
-        </span>
+        <span className="repo-path" />
         <div className="toolbar-actions">
           <button
             className="toolbar-btn"
