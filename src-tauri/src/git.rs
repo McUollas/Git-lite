@@ -1,4 +1,5 @@
 use serde::Serialize;
+use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::Mutex;
@@ -96,6 +97,7 @@ pub fn open_repo(path: String, state: State<RepoState>) -> Result<String, String
     if !p.join(".git").exists() {
         return Err("La cartella selezionata non è una repository git (manca .git)".to_string());
     }
+    ensure_credential_helper();
     *state.0.lock().unwrap() = Some(p);
     Ok(path)
 }
@@ -294,9 +296,13 @@ pub fn create_branch_from(
 }
 
 #[tauri::command(async)]
-pub fn push_branch(name: String, state: State<RepoState>) -> Result<String, String> {
+pub fn push_branch(name: String, force: bool, state: State<RepoState>) -> Result<String, String> {
     let repo = current_repo(&state)?;
-    run_git(&repo, &["push", "origin", &name])
+    let mut args = vec!["push", "origin", name.as_str()];
+    if force {
+        args.push("--force");
+    }
+    run_git(&repo, &args)
 }
 
 #[tauri::command(async)]
@@ -353,6 +359,60 @@ fn remote_url_for_credentials(repo: &PathBuf) -> Result<String, String> {
     Ok(url)
 }
 
+// Se non è già configurato un credential.helper globale, ne imposta uno che
+// salva le credenziali nel portachiavi di sistema (libsecret: GNOME Keyring o
+// KWallet via Secret Service), invece di lasciarle solo in memoria per una
+// singola invocazione. Non tocca la scelta dell'utente se ne ha già una.
+fn ensure_credential_helper() {
+    let already_set = Command::new("git")
+        .args(["config", "--global", "--get", "credential.helper"])
+        .output()
+        .map(|o| o.status.success() && !o.stdout.is_empty())
+        .unwrap_or(false);
+    if already_set {
+        return;
+    }
+    let exec_path = Command::new("git")
+        .arg("--exec-path")
+        .output()
+        .ok()
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string());
+    let has_libsecret = exec_path
+        .as_deref()
+        .map(|p| PathBuf::from(p).join("git-credential-libsecret").exists())
+        .unwrap_or(false);
+    if has_libsecret {
+        let _ = Command::new("git")
+            .args(["config", "--global", "credential.helper", "libsecret"])
+            .status();
+    }
+}
+
+// Passa le credenziali al credential.helper configurato (se c'è) perché le
+// salvi nel portachiavi di sistema: da qui in poi le push/pull normali le
+// trovano da sole, senza dover richiedere di nuovo username/password.
+// Best-effort: se non c'è nessun helper configurato, git non salva nulla, ma
+// non è un errore che deve far fallire l'operazione (già andata a buon fine).
+fn store_credentials(repo: &PathBuf, url: &str, username: &str, password: &str) {
+    let input = format!("url={url}\nusername={username}\npassword={password}\n\n");
+    if let Ok(mut child) = Command::new("git")
+        .arg("-C")
+        .arg(repo)
+        .args(["credential", "approve"])
+        .env("GIT_TERMINAL_PROMPT", "0")
+        .env("LC_ALL", "C")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+    {
+        if let Some(stdin) = child.stdin.as_mut() {
+            let _ = stdin.write_all(input.as_bytes());
+        }
+        let _ = child.wait();
+    }
+}
+
 #[tauri::command(async)]
 pub fn push_with_credentials(
     branch: String,
@@ -363,7 +423,9 @@ pub fn push_with_credentials(
     let repo = current_repo(&state)?;
     let url = remote_url_for_credentials(&repo)?;
     let authed = inject_credentials(&url, &username, &password);
-    run_git(&repo, &["push", &authed, &branch])
+    let out = run_git(&repo, &["push", &authed, &branch])?;
+    store_credentials(&repo, &url, &username, &password);
+    Ok(out)
 }
 
 #[tauri::command(async)]
@@ -376,7 +438,9 @@ pub fn pull_with_credentials(
     let repo = current_repo(&state)?;
     let url = remote_url_for_credentials(&repo)?;
     let authed = inject_credentials(&url, &username, &password);
-    run_git(&repo, &["pull", &authed, &branch])
+    let out = run_git(&repo, &["pull", &authed, &branch])?;
+    store_credentials(&repo, &url, &username, &password);
+    Ok(out)
 }
 
 #[tauri::command(async)]

@@ -107,7 +107,7 @@ export default function App() {
     branch: string;
     kind: "pull" | "update";
   } | null>(null);
-  const [showForcePushConfirm, setShowForcePushConfirm] = useState(false);
+  const [forcePushTarget, setForcePushTarget] = useState<string | null>(null);
   const [discardTarget, setDiscardTarget] = useState<string | null>(null);
   const [showCloneDialog, setShowCloneDialog] = useState(false);
   const [credentialPrompt, setCredentialPrompt] = useState<{
@@ -433,7 +433,7 @@ export default function App() {
       "Pushing...",
       undefined,
       undefined,
-      () => setShowForcePushConfirm(true),
+      () => setForcePushTarget(status.branch),
     );
   }
   const doPull = () =>
@@ -461,6 +461,9 @@ export default function App() {
       () => api.pushBranch(name),
       () => setCredentialPrompt({ action: "push", branch: name }),
       "Pushing...",
+      undefined,
+      undefined,
+      () => setForcePushTarget(name),
     );
   const doPullBranch = (name: string) =>
     runGitAction(
@@ -830,17 +833,18 @@ export default function App() {
           onConfirm={confirmPush}
         />
       )}
-      {showForcePushConfirm && (
+      {forcePushTarget && (
         <ConfirmDialog
           title="Push rifiutato: forzare?"
-          message={`Il remote ha commit che il locale non ha (storie divergenti o slegate): un push normale del branch "${status.branch}" viene rifiutato. Forzare il push sovrascrive la storia sul remote con quella locale, cancellando per sempre quello che c'era prima lì. Procedere solo se sei sicuro che il locale sia la versione da tenere.`}
+          message={`Il remote ha commit che il locale non ha (storie divergenti o slegate): un push normale del branch "${forcePushTarget}" viene rifiutato. Forzare il push sovrascrive la storia sul remote con quella locale, cancellando per sempre quello che c'era prima lì. Procedere solo se sei sicuro che il locale sia la versione da tenere.`}
           confirmLabel="Forza push"
-          onCancel={() => setShowForcePushConfirm(false)}
+          onCancel={() => setForcePushTarget(null)}
           onConfirm={() => {
-            setShowForcePushConfirm(false);
+            const branch = forcePushTarget;
+            setForcePushTarget(null);
             runGitAction(
-              () => api.push(true),
-              () => setCredentialPrompt({ action: "push", branch: status.branch }),
+              () => (branch === status.branch ? api.push(true) : api.pushBranch(branch, true)),
+              () => setCredentialPrompt({ action: "push", branch }),
               "Pushing (force)...",
             );
           }}

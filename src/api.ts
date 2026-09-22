@@ -82,7 +82,7 @@ export const api = {
   pull: (strategy?: "merge" | "rebase" | "ff-only") => invoke<string>("pull", { strategy }),
   fetchAll: () => invoke<string>("fetch_all"),
   setUpstream: (branch: string) => invoke<string>("set_upstream", { branch }),
-  pushBranch: (name: string) => invoke<string>("push_branch", { name }),
+  pushBranch: (name: string, force = false) => invoke<string>("push_branch", { name, force }),
   pullBranch: (name: string) => invoke<string>("pull_branch", { name }),
   deleteBranch: (name: string, force = false) =>
     invoke<string>("delete_branch", { name, force }),
