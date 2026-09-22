@@ -28,6 +28,7 @@ export interface Commit {
   date: string;
   lane: number;
   color: number;
+  is_ancestor_of_head: boolean;
 }
 
 export interface Edge {
@@ -87,6 +88,11 @@ export const api = {
   deleteBranch: (name: string, force = false) =>
     invoke<string>("delete_branch", { name, force }),
   mergeBranch: (name: string) => invoke<string>("merge_branch", { name }),
+  cherryPickCommit: (hash: string) => invoke<string>("cherry_pick_commit", { hash }),
+  revertCommit: (hash: string) => invoke<string>("revert_commit", { hash }),
+  cherryPickSkip: () => invoke<string>("cherry_pick_skip"),
+  cherryPickCommitEmpty: () => invoke<string>("cherry_pick_commit_empty"),
+  cherryPickAbort: () => invoke<string>("cherry_pick_abort"),
   pushWithCredentials: (branch: string, username: string, password: string) =>
     invoke<string>("push_with_credentials", { branch, username, password }),
   pullWithCredentials: (branch: string, username: string, password: string) =>

@@ -4,6 +4,7 @@ export interface ContextMenuItem {
   label: string;
   onSelect: () => void;
   disabled?: boolean;
+  title?: string;
 }
 
 interface Props {
@@ -34,6 +35,7 @@ export function ContextMenu({ x, y, items, onClose }: Props) {
         <div
           key={item.label}
           className={"context-menu-item" + (item.disabled ? " disabled" : "")}
+          title={item.title}
           onClick={() => {
             if (item.disabled) return;
             item.onSelect();

@@ -11,6 +11,7 @@ import { ContextMenu, ContextMenuItem } from "./components/ContextMenu";
 import { NewBranchDialog } from "./components/NewBranchDialog";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { ReconcileDialog } from "./components/ReconcileDialog";
+import { EmptyCherryPickDialog } from "./components/EmptyCherryPickDialog";
 import { CloneDialog } from "./components/CloneDialog";
 import { CredentialDialog } from "./components/CredentialDialog";
 import { RepoTabs } from "./components/RepoTabs";
@@ -96,6 +97,11 @@ export default function App() {
     y: number;
     branch: Branch;
   } | null>(null);
+  const [commitContextMenu, setCommitContextMenu] = useState<{
+    x: number;
+    y: number;
+    commit: Commit;
+  } | null>(null);
   const [newBranchFrom, setNewBranchFrom] = useState<string | null>(null);
   const [deleteBranchTarget, setDeleteBranchTarget] = useState<string | null>(null);
   const [forceDeleteBranchTarget, setForceDeleteBranchTarget] = useState<string | null>(null);
@@ -108,6 +114,7 @@ export default function App() {
     kind: "pull" | "update";
   } | null>(null);
   const [forcePushTarget, setForcePushTarget] = useState<string | null>(null);
+  const [emptyCherryPickPrompt, setEmptyCherryPickPrompt] = useState(false);
   const [discardTarget, setDiscardTarget] = useState<string | null>(null);
   const [showCloneDialog, setShowCloneDialog] = useState(false);
   const [credentialPrompt, setCredentialPrompt] = useState<{
@@ -403,6 +410,10 @@ export default function App() {
     return /has no upstream branch/i.test(msg);
   }
 
+  function isEmptyCherryPickError(msg: string): boolean {
+    return /previous cherry-pick is now empty/i.test(msg);
+  }
+
   async function runGitAction(
     fn: () => Promise<string>,
     onAuthFailure?: () => void,
@@ -411,6 +422,7 @@ export default function App() {
     onDiverged?: () => void,
     onRejected?: () => void,
     onPushNoUpstream?: () => void,
+    onEmptyCherryPick?: () => void,
   ) {
     setBusy(true);
     if (loadingLabel) showLoading(loadingLabel);
@@ -427,6 +439,8 @@ export default function App() {
         onDiverged();
       } else if (onPushNoUpstream && isPushNoUpstreamError(msg)) {
         onPushNoUpstream();
+      } else if (onEmptyCherryPick && isEmptyCherryPickError(msg)) {
+        onEmptyCherryPick();
       } else if (onRejected && isRejectedPushError(msg)) {
         onRejected();
       } else {
@@ -490,6 +504,31 @@ export default function App() {
     );
   const doMerge = (name: string) =>
     runGitAction(() => api.mergeBranch(name), undefined, "Merging...");
+  const doCherryPick = (hash: string) =>
+    runGitAction(
+      () => api.cherryPickCommit(hash),
+      undefined,
+      "Cherry-picking...",
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      () => setEmptyCherryPickPrompt(true),
+    );
+  const doRevertCommit = (hash: string) =>
+    runGitAction(() => api.revertCommit(hash), undefined, "Reverting...");
+  const doCherryPickSkip = () => {
+    setEmptyCherryPickPrompt(false);
+    runGitAction(() => api.cherryPickSkip(), undefined, "Cherry-picking...");
+  };
+  const doCherryPickCommitEmpty = () => {
+    setEmptyCherryPickPrompt(false);
+    runGitAction(() => api.cherryPickCommitEmpty(), undefined, "Cherry-picking...");
+  };
+  const doCherryPickAbort = () => {
+    setEmptyCherryPickPrompt(false);
+    runGitAction(() => api.cherryPickAbort(), undefined, "Annullamento cherry-pick...");
+  };
   const doUpdateBranch = (name: string) =>
     runGitAction(
       async () => {
@@ -513,6 +552,29 @@ export default function App() {
 
   function openBranchContextMenu(branch: Branch, x: number, y: number) {
     setContextMenu({ x, y, branch });
+  }
+
+  function openCommitContextMenu(commit: Commit, x: number, y: number) {
+    setCommitContextMenu({ x, y, commit });
+  }
+
+  function commitContextMenuItems(): ContextMenuItem[] {
+    if (!commitContextMenu) return [];
+    const c = commitContextMenu.commit;
+    return [
+      {
+        label: "Cherry-pick",
+        // Se il commit è già un antenato di HEAD, le sue modifiche ci sono
+        // già: un cherry-pick sarebbe sempre vuoto, quindi lo si inibisce
+        // invece di lasciarlo fallire.
+        disabled: c.is_ancestor_of_head,
+        title: c.is_ancestor_of_head
+          ? "Le modifiche di questo commit sono già presenti nel branch corrente"
+          : undefined,
+        onSelect: () => doCherryPick(c.hash),
+      },
+      { label: "Revert", onSelect: () => doRevertCommit(c.hash) },
+    ];
   }
 
   function contextMenuItems(): ContextMenuItem[] {
@@ -688,6 +750,7 @@ export default function App() {
             edges={edges}
             selectedHash={selectedCommitHash}
             onSelectCommit={selectCommit}
+            onContextMenu={openCommitContextMenu}
             showAllBranches={showAllBranches}
             onToggleAllBranches={() => setShowAllBranches((v) => !v)}
           />
@@ -751,6 +814,14 @@ export default function App() {
           y={contextMenu.y}
           items={contextMenuItems()}
           onClose={() => setContextMenu(null)}
+        />
+      )}
+      {commitContextMenu && (
+        <ContextMenu
+          x={commitContextMenu.x}
+          y={commitContextMenu.y}
+          items={commitContextMenuItems()}
+          onClose={() => setCommitContextMenu(null)}
         />
       )}
       {newBranchFrom && (
@@ -838,6 +909,13 @@ export default function App() {
               kind === "update" ? "Updating..." : "Pulling...",
             );
           }}
+        />
+      )}
+      {emptyCherryPickPrompt && (
+        <EmptyCherryPickDialog
+          onSkip={doCherryPickSkip}
+          onCommitEmpty={doCherryPickCommitEmpty}
+          onAbort={doCherryPickAbort}
         />
       )}
       {showPushConfirm && (

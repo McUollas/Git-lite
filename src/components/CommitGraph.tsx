@@ -10,6 +10,7 @@ interface Props {
   edges: Edge[];
   selectedHash: string | null;
   onSelectCommit: (hash: string) => void;
+  onContextMenu: (commit: Commit, x: number, y: number) => void;
   showAllBranches: boolean;
   onToggleAllBranches: () => void;
 }
@@ -77,10 +78,12 @@ function SearchResultRow({
   c,
   selected,
   onClick,
+  onContextMenu,
 }: {
   c: Commit;
   selected: boolean;
   onClick: () => void;
+  onContextMenu: (x: number, y: number) => void;
 }) {
   const isHead = c.refs.some((r) => r.startsWith("HEAD"));
   const refs = cleanRefs(c.refs);
@@ -90,6 +93,10 @@ function SearchResultRow({
         "search-row" + (selected ? " selected" : "") + (isMergeCommit(c.subject) ? " merge" : "")
       }
       onClick={onClick}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        onContextMenu(e.clientX, e.clientY);
+      }}
     >
       <span className={"dot" + (isHead ? " head" : "")} />
       <span className="subject">{c.subject}</span>
@@ -110,6 +117,7 @@ export function CommitGraph({
   edges,
   selectedHash,
   onSelectCommit,
+  onContextMenu,
   showAllBranches,
   onToggleAllBranches,
 }: Props) {
@@ -202,6 +210,7 @@ export function CommitGraph({
                   c={c}
                   selected={c.hash === selectedHash}
                   onClick={() => onSelectCommit(c.hash)}
+                  onContextMenu={(x, y) => onContextMenu(c, x, y)}
                 />
               ))}
             </ul>
@@ -295,6 +304,10 @@ export function CommitGraph({
                     } as CSSProperties
                   }
                   onClick={() => onSelectCommit(c.hash)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    onContextMenu(c, e.clientX, e.clientY);
+                  }}
                 >
                   <CommitMeta c={c} metaWidth={metaWidth} />
                 </div>

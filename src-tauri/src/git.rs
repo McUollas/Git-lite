@@ -318,6 +318,38 @@ pub fn merge_branch(name: String, state: State<RepoState>) -> Result<String, Str
     run_git(&repo, &["merge", "--no-edit", &name])
 }
 
+#[tauri::command(async)]
+pub fn cherry_pick_commit(hash: String, state: State<RepoState>) -> Result<String, String> {
+    let repo = current_repo(&state)?;
+    run_git(&repo, &["cherry-pick", &hash])
+}
+
+#[tauri::command(async)]
+pub fn revert_commit(hash: String, state: State<RepoState>) -> Result<String, String> {
+    let repo = current_repo(&state)?;
+    run_git(&repo, &["revert", "--no-edit", &hash])
+}
+
+// Le tre vie d'uscita da un cherry-pick "vuoto" (le modifiche del commit ci
+// sono già): saltarlo, committarlo comunque vuoto, o annullare tutto.
+#[tauri::command(async)]
+pub fn cherry_pick_skip(state: State<RepoState>) -> Result<String, String> {
+    let repo = current_repo(&state)?;
+    run_git(&repo, &["cherry-pick", "--skip"])
+}
+
+#[tauri::command(async)]
+pub fn cherry_pick_commit_empty(state: State<RepoState>) -> Result<String, String> {
+    let repo = current_repo(&state)?;
+    run_git(&repo, &["commit", "--allow-empty", "--no-edit"])
+}
+
+#[tauri::command(async)]
+pub fn cherry_pick_abort(state: State<RepoState>) -> Result<String, String> {
+    let repo = current_repo(&state)?;
+    run_git(&repo, &["cherry-pick", "--abort"])
+}
+
 fn percent_encode(s: &str) -> String {
     let mut out = String::new();
     for b in s.bytes() {
@@ -652,6 +684,10 @@ pub struct Commit {
     date: String,
     lane: usize,
     color: usize,
+    // Se è già un antenato di HEAD, un cherry-pick di questo commit sul
+    // branch corrente sarebbe sempre vuoto (le modifiche ci sono già): il
+    // frontend usa questo per non offrire l'azione quando non avrebbe senso.
+    is_ancestor_of_head: bool,
 }
 
 #[derive(Serialize)]
@@ -699,9 +735,20 @@ fn parse_commit_lines(out: &str) -> Vec<Commit> {
                 date,
                 lane: 0,
                 color: 0,
+                is_ancestor_of_head: false,
             }
         })
         .collect()
+}
+
+// Un solo "git rev-list HEAD" (solo hash, nessun diff) invece di controllare
+// ogni commit singolarmente: economico anche con centinaia di commit mostrati.
+fn mark_ancestors_of_head(repo: &PathBuf, commits: &mut [Commit]) {
+    let out = run_git(repo, &["rev-list", "HEAD"]).unwrap_or_default();
+    let ancestors: std::collections::HashSet<&str> = out.lines().collect();
+    for c in commits.iter_mut() {
+        c.is_ancestor_of_head = ancestors.contains(c.hash.as_str());
+    }
 }
 
 #[tauri::command(async)]
@@ -720,7 +767,9 @@ pub fn search_commits(query: String, state: State<RepoState>) -> Result<Vec<Comm
             "--date=format:%d/%m/%Y %H:%M",
         ],
     )?;
-    Ok(parse_commit_lines(&out))
+    let mut commits = parse_commit_lines(&out);
+    mark_ancestors_of_head(&repo, &mut commits);
+    Ok(commits)
 }
 
 #[tauri::command(async)]
@@ -757,6 +806,7 @@ pub fn get_log_graph(
     let out = run_git(&repo, &args)?;
 
     let mut commits = parse_commit_lines(&out);
+    mark_ancestors_of_head(&repo, &mut commits);
 
     assign_lanes(&mut commits);
 
