@@ -484,11 +484,19 @@ pub fn pull_branch(name: String, state: State<RepoState>) -> Result<String, Stri
 }
 
 #[tauri::command(async)]
-pub fn push(force: bool, state: State<RepoState>) -> Result<String, String> {
+pub fn push(force: bool, set_upstream: bool, state: State<RepoState>) -> Result<String, String> {
     let repo = current_repo(&state)?;
     let mut args = vec!["push"];
     if force {
         args.push("--force");
+    }
+    if set_upstream {
+        // "HEAD" invece del nome esplicito del branch: git lo risolve da solo
+        // al branch corrente, quindi funziona anche per un branch appena
+        // creato senza dover interrogare prima lo stato del repo.
+        args.push("--set-upstream");
+        args.push("origin");
+        args.push("HEAD");
     }
     run_git(&repo, &args)
 }

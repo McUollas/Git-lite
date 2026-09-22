@@ -399,6 +399,10 @@ export default function App() {
     return /\[rejected\]|failed to push some refs/i.test(msg);
   }
 
+  function isPushNoUpstreamError(msg: string): boolean {
+    return /has no upstream branch/i.test(msg);
+  }
+
   async function runGitAction(
     fn: () => Promise<string>,
     onAuthFailure?: () => void,
@@ -406,6 +410,7 @@ export default function App() {
     onNoUpstream?: () => void,
     onDiverged?: () => void,
     onRejected?: () => void,
+    onPushNoUpstream?: () => void,
   ) {
     setBusy(true);
     if (loadingLabel) showLoading(loadingLabel);
@@ -420,6 +425,8 @@ export default function App() {
         onNoUpstream();
       } else if (onDiverged && isDivergedError(msg)) {
         onDiverged();
+      } else if (onPushNoUpstream && isPushNoUpstreamError(msg)) {
+        onPushNoUpstream();
       } else if (onRejected && isRejectedPushError(msg)) {
         onRejected();
       } else {
@@ -431,16 +438,20 @@ export default function App() {
     }
   }
 
-  function confirmPush() {
-    setShowPushConfirm(false);
+  function doPushCurrent(setUpstream = false) {
     runGitAction(
-      () => api.push(),
+      () => api.push(false, setUpstream),
       () => setCredentialPrompt({ action: "push", branch: status.branch }),
       "Pushing...",
       undefined,
       undefined,
       () => setForcePushTarget(status.branch),
+      () => doPushCurrent(true),
     );
+  }
+  function confirmPush() {
+    setShowPushConfirm(false);
+    doPushCurrent();
   }
   const doPull = () =>
     runGitAction(
@@ -535,8 +546,6 @@ export default function App() {
       },
     ];
   }
-
-  const stagedCount = status.files.filter((f) => f.index !== " " && f.index !== "?").length;
 
   if (repos.length === 0) {
     return (
@@ -634,8 +643,7 @@ export default function App() {
             onMouseDown={pressEffect}
             onAnimationEnd={clearPressEffect}
             onClick={() => setShowPushConfirm(true)}
-            disabled={busy || stagedCount === 0}
-            title={stagedCount === 0 ? "Nessun file in stage" : undefined}
+            disabled={busy}
           >
             <IconPush />
             Push

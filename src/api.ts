@@ -78,7 +78,7 @@ export const api = {
   createBranch: (name: string) => invoke<void>("create_branch", { name }),
   createBranchFrom: (name: string, startPoint: string) =>
     invoke<void>("create_branch_from", { name, startPoint }),
-  push: (force = false) => invoke<string>("push", { force }),
+  push: (force = false, setUpstream = false) => invoke<string>("push", { force, setUpstream }),
   pull: (strategy?: "merge" | "rebase" | "ff-only") => invoke<string>("pull", { strategy }),
   fetchAll: () => invoke<string>("fetch_all"),
   setUpstream: (branch: string) => invoke<string>("set_upstream", { branch }),
