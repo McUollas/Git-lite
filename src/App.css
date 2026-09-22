@@ -1285,7 +1285,9 @@ ul {
   padding: 6px 10px;
   cursor: pointer;
   color: var(--text-dim);
-  font-size: 16px;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
 }
 .repo-tab-add:hover {
   color: var(--text);

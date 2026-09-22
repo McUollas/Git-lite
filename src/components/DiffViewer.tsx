@@ -1,6 +1,7 @@
 interface Props {
   path: string | null;
   diff: string;
+  onClose: () => void;
 }
 
 interface DiffLine {
@@ -57,11 +58,18 @@ function parseDiff(diff: string): DiffLine[] {
   return result;
 }
 
-export function DiffViewer({ path, diff }: Props) {
+export function DiffViewer({ path, diff, onClose }: Props) {
   if (!path || diff.trim() === "") {
     return (
       <div className="panel diff-panel">
-        <h2>{path ?? "Diff"}</h2>
+        <div className="commit-details-header">
+          <h2>{path ?? "Diff"}</h2>
+          {path && (
+            <button className="close-btn" onClick={onClose} aria-label="Chiudi" title="Chiudi">
+              ×
+            </button>
+          )}
+        </div>
         <div className="diff-empty">
           {path ? "Nessuna differenza da mostrare." : "Seleziona un file per vedere le modifiche."}
         </div>
@@ -72,7 +80,12 @@ export function DiffViewer({ path, diff }: Props) {
   const lines = parseDiff(diff);
   return (
     <div className="panel diff-panel">
-      <h2>{path}</h2>
+      <div className="commit-details-header">
+        <h2>{path}</h2>
+        <button className="close-btn" onClick={onClose} aria-label="Chiudi" title="Chiudi">
+          ×
+        </button>
+      </div>
       <div className="diff-scroll">
         {lines.map((l, i) => (
           <div key={i} className={"diff-row " + l.type}>

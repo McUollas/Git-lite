@@ -36,7 +36,7 @@ export function RepoTabs({ repos, active, onSelect, onClose, onAdd, onClone }: P
         +
       </div>
       <div className="repo-tab-add" onClick={onClone} title="Clona repository">
-        <IconClone />
+        <IconClone size={18} />
       </div>
     </div>
   );

@@ -669,7 +669,7 @@ export default function App() {
           }}
         />
         {workspaceView === "history" && commitDetailsOpen && selectedCommitHash && commitFile ? (
-          <DiffViewer path={commitFile} diff={commitDiff} />
+          <DiffViewer path={commitFile} diff={commitDiff} onClose={() => setCommitFile(null)} />
         ) : workspaceView === "history" ? (
           <CommitGraph
             commits={commits}
@@ -714,7 +714,11 @@ export default function App() {
                   onClose={() => setCommitDetailsOpen(false)}
                 />
               ) : (
-                <DiffViewer path={selected?.path ?? null} diff={diff} />
+                <DiffViewer
+                  path={selected?.path ?? null}
+                  diff={diff}
+                  onClose={() => setSelected(null)}
+                />
               )}
             </div>
           </>
