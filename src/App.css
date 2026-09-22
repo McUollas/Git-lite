@@ -1,0 +1,1279 @@
+:root {
+  --bg: #1f2732;
+  --bg-panel: #232b37;
+  --bg-input: #181f28;
+  --border: #333e4c;
+  --text: #dbe1e8;
+  --text-dim: #8994a3;
+  --accent: #3574f0;
+  --danger: #e0605f;
+  --warning: #e0c73f;
+  --success: #4fd67a;
+  --hover: #2b3542;
+  --selected: #334154;
+  --bg-dark: #171d25;
+  --ref-text: #8fb3f0;
+
+  color: var(--text);
+  background-color: var(--bg);
+  font-family: Inter, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 13px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Le icone SVG inline hanno di default un piccolo spazio sotto la linea
+   di base (comportamento "inline" ereditato dal testo): con display:block
+   quello spazio sparisce e align-items:center le centra davvero rispetto
+   all'etichetta accanto, invece di lasciarle leggermente sfalsate. */
+svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+button {
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  padding: 5px 10px;
+  font-size: 13px;
+  color: var(--text);
+  background-color: var(--hover);
+  cursor: pointer;
+}
+button:hover {
+  border-color: var(--accent);
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+button.warning {
+  border-color: var(--warning);
+  color: var(--warning);
+}
+button.secondary {
+  background: transparent;
+}
+
+input,
+textarea {
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  padding: 5px 8px;
+  font-size: 13px;
+  color: var(--text);
+  background-color: var(--bg-input);
+  font-family: inherit;
+}
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-dim);
+  opacity: 1;
+}
+
+h2 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  margin: 0 0 8px;
+  cursor: default;
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.empty-state-actions {
+  display: flex;
+  gap: 8px;
+}
+.recent-repos {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 280px;
+  margin-top: 4px;
+}
+.recent-repos li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-dim);
+  font-size: 12.5px;
+}
+.recent-repos li:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.recent-repos li span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recent-remove {
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+.recent-remove:hover {
+  color: var(--danger);
+}
+
+.resize-border {
+  position: fixed;
+  z-index: 9999;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.titlebar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  height: 30px;
+  flex-shrink: 0;
+  padding-left: 10px;
+  background: var(--bg-dark);
+  user-select: none;
+}
+.titlebar-spacer {
+  justify-self: start;
+  display: flex;
+  align-items: center;
+}
+.titlebar-icon {
+  width: 16px;
+  height: 16px;
+}
+.titlebar-title {
+  font-size: 12px;
+  color: var(--text-dim);
+  justify-self: center;
+}
+.titlebar-controls {
+  display: flex;
+  height: 100%;
+  justify-self: end;
+}
+.titlebar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 100%;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-dim);
+}
+.titlebar-btn:hover {
+  background: var(--hover);
+  border-color: transparent;
+}
+.titlebar-close:hover {
+  background: var(--danger);
+  color: #ffffff;
+}
+
+.topbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-panel);
+}
+.topbar .repo-path {
+  justify-self: start;
+  color: var(--text-dim);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+}
+.topbar-right {
+  justify-self: end;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  justify-self: center;
+}
+.toolbar-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: transparent;
+  border: none;
+  padding: 3px 12px;
+  font-size: 11px;
+  color: var(--text-dim);
+  border-radius: 4px;
+  transition: background 0.08s ease-out, color 0.08s ease-out;
+}
+.toolbar-btn:hover {
+  background: var(--hover);
+  color: var(--text);
+  border-color: transparent;
+}
+.toolbar-btn.pressed {
+  animation: toolbar-btn-press 0.16s ease-out;
+}
+@keyframes toolbar-btn-press {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(0.9);
+    background: var(--hover);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.toolbar-sep {
+  width: 1px;
+  background: var(--border);
+  margin: 4px 4px;
+}
+
+.message-bar {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+.message-bar.success {
+  background: rgba(79, 214, 122, 0.12);
+  border-left-color: var(--success);
+  color: var(--success);
+}
+.message-bar.error {
+  background: rgba(224, 95, 95, 0.12);
+  border-left-color: var(--danger);
+  color: var(--danger);
+}
+.message-bar.loading {
+  background: rgba(53, 116, 240, 0.12);
+  border-left-color: var(--accent);
+  color: var(--accent);
+  cursor: default;
+}
+
+.error {
+  color: var(--danger);
+  font-size: 12px;
+}
+.error.success {
+  color: var(--success);
+}
+
+.columns {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.panel {
+  padding: 10px 12px;
+  overflow-y: auto;
+}
+
+.branch-panel {
+  border-right: 1px solid var(--border);
+  background: var(--bg-panel);
+  flex-shrink: 0;
+}
+
+.resize-handle {
+  width: 3px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: transparent;
+  position: relative;
+}
+/* Area cliccabile allargata oltre la larghezza visiva, per non doverla
+   centrare al pixel (e per non farsi "rubare" il click dalla scrollbar
+   del pannello adiacente). */
+.resize-handle::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -5px;
+  right: -5px;
+}
+.resize-handle:hover {
+  background: var(--accent);
+}
+
+.search-input-wrap {
+  position: relative;
+}
+.search-input-wrap input {
+  width: 100%;
+  padding-right: 26px;
+}
+.search-clear-btn {
+  position: absolute;
+  right: 3px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 15px;
+  line-height: 1;
+  padding: 3px 5px;
+  cursor: pointer;
+}
+.search-clear-btn:hover {
+  color: var(--text);
+}
+
+.branch-search {
+  margin-bottom: 10px;
+  max-width: 260px;
+}
+
+.commit-search {
+  margin: 2px 0 10px;
+  flex-shrink: 0;
+}
+.history-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.history-toolbar .commit-search {
+  flex: 1;
+  min-width: 0;
+}
+.all-branches-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: 10px;
+}
+
+.search-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.search-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.search-row:hover {
+  background: var(--hover);
+}
+.search-row.selected {
+  background: var(--selected);
+}
+.search-row.merge {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-dim);
+}
+.search-row.merge:hover {
+  background: var(--hover);
+}
+.search-row.merge.selected {
+  background: var(--selected);
+}
+.search-row .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #7b83eb;
+  flex-shrink: 0;
+}
+.search-row .dot.head {
+  background: transparent;
+  border: 2px solid var(--success);
+  width: 7px;
+  height: 7px;
+}
+.search-row .subject {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.search-row .refs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ref-text);
+  font-size: 12px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.search-row .author {
+  font-weight: 600;
+  font-size: 12px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.search-row .date {
+  color: var(--text-dim);
+  font-size: 12px;
+  flex-shrink: 0;
+  width: 90px;
+  text-align: right;
+}
+
+.branch-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+}
+.branch-title.workspace-title {
+  margin-top: 0;
+}
+
+.workspace-list {
+  list-style: none;
+  margin: 0 -12px 6px;
+  padding: 0 12px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.workspace-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px 5px 18px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-dim);
+  font-size: 12.5px;
+  max-width: 260px;
+}
+.workspace-list li:hover {
+  background: var(--hover);
+}
+.workspace-list li.active {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.branch-group-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin: 10px 0 4px;
+  cursor: pointer;
+  user-select: none;
+}
+.branch-subgroup-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 400;
+  margin: 0;
+  padding: 3px 2px 3px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+.branch-subgroup-label:hover {
+  background: var(--hover);
+}
+.chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 10px;
+  flex-shrink: 0;
+  color: var(--text-dim);
+}
+
+.branch-list {
+  /* Niente margine qui: l'indentazione è già tutta gestita dai paddingLeft
+     calcolati in BranchList.tsx. Un margine extra qui sfalserebbe le righe
+     dei Locali rispetto a quelle dei Remoti (che non hanno questo wrapper). */
+  margin-left: 0;
+}
+.branch-list.nested {
+  margin-left: 0;
+}
+
+.branch-list li {
+  display: flex;
+  align-items: center;
+  padding: 3px 2px 3px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 20px;
+}
+.branch-list li:hover {
+  background: var(--hover);
+}
+.branch-list li.current {
+  color: var(--accent);
+}
+.branch-leaf-gutter {
+  flex-shrink: 0;
+}
+.branch-list .branch-name {
+  /* Nessun flex-grow: la riga resta larga quanto il testo, così le
+     freccette ahead/behind restano subito dopo il nome invece di finire
+     spinte in fondo alla riga. Si restringe (con ellissi) solo se il
+     pannello è troppo stretto per nome+freccette insieme. */
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.branch-track {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 400;
+  margin-left: 2px;
+}
+.track-ahead,
+.track-behind {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.track-ahead {
+  color: var(--success);
+}
+.track-behind {
+  color: var(--ref-text);
+}
+.graph-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  /* Spazio dedicato tra la scrollbar del pannello e la maniglia di
+     ridimensionamento adiacente: senza, il click finiva sulla scrollbar
+     invece che sulla maniglia. */
+  margin-right: 6px;
+}
+
+.graph-empty {
+  color: var(--text-dim);
+  font-size: 12px;
+  padding: 12px 0;
+  max-width: 480px;
+}
+
+.graph-header {
+  display: flex;
+  gap: 16px;
+  color: var(--text-dim);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding-top: 8px;
+  padding-bottom: 4px;
+  padding-right: 18px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  background: var(--bg-panel);
+  z-index: 1;
+}
+.graph-header .col-subject {
+  flex: 1;
+}
+.meta-resize-handle {
+  width: 3px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: var(--border);
+  position: relative;
+}
+.meta-resize-handle::after {
+  content: "";
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  left: -5px;
+  right: -5px;
+}
+.meta-resize-handle:hover {
+  background: var(--accent);
+}
+
+/* .col-meta e le sue tre sotto-colonne sono condivise da riga di intestazione
+   e righe dati: stesse larghezze fisse = autore/data/hash allineati per colonna,
+   non solo "un blocco di testo allineato a destra" che si sposta riga per riga. */
+.col-meta {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 10px;
+}
+.col-author {
+  width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.col-date {
+  width: 110px;
+}
+.col-hash {
+  width: 56px;
+}
+
+.graph-scroll {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+.graph-body {
+  position: relative;
+}
+
+.graph-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* È solo decorativo (pallini/linee): da posizionato, senza questo
+     "catturerebbe" i click destinati alla riga sotto quando è più largo
+     del punto in cui inizia il testo (commit con lane profonde). */
+  pointer-events: none;
+}
+
+.graph-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.graph-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  padding-right: 18px;
+  cursor: pointer;
+}
+/* Riga completa (dalla lane del grafo fino all'hash) tinteggiata da un unico
+   pseudo-elemento: prima c'erano due sorgenti separate (background CSS sulla
+   riga + rect SVG per la sola area del grafo) che potevano disallinearsi e
+   dare l'impressione di un colore diverso a partire dalla descrizione. */
+.graph-row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(-1 * var(--row-offset, 0px));
+  right: 0;
+  z-index: -1;
+}
+.graph-row:nth-child(even)::before {
+  background: rgba(255, 255, 255, 0.03);
+}
+.graph-row:hover {
+  background: var(--hover);
+}
+.graph-row.selected {
+  background: var(--selected);
+}
+.graph-row .subject {
+  flex: 1;
+  min-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.graph-row .col-meta {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+.ref-badge {
+  background: var(--hover);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0 4px;
+  font-size: 11px;
+  color: var(--accent);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.right-column {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  background: var(--bg-panel);
+}
+
+.status-panel {
+  flex: 1;
+  border-bottom: 1px solid var(--border);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.status-panel > h2 {
+  flex-shrink: 0;
+}
+
+.commit-details-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 4px;
+}
+.close-btn:hover {
+  color: var(--text);
+  border-color: transparent;
+}
+.commit-subject {
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.commit-meta-line {
+  color: var(--text-dim);
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.commit-details {
+  font-size: 13.5px;
+}
+.commit-details .commit-subject {
+  font-size: 14.5px;
+}
+.commit-details .commit-meta-line {
+  font-size: 12px;
+}
+.commit-details .status-group-header,
+.commit-details .tree-file,
+.commit-details .tree-folder {
+  font-size: 13px;
+}
+
+.file-tree {
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+}
+.tree-folder {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px;
+  color: var(--text);
+  font-size: 12px;
+  white-space: nowrap;
+  width: max-content;
+  min-width: 100%;
+}
+.tree-folder .folder-count {
+  color: var(--text-dim);
+  font-size: 11px;
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+.tree-icon-slot {
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.tree-file {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+  width: max-content;
+  min-width: 100%;
+}
+.tree-file:hover {
+  background: var(--hover);
+}
+.tree-file.selected {
+  background: var(--selected);
+}
+.tree-file-icon {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ref-text);
+  flex-shrink: 0;
+}
+.tree-file .file-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ref-text);
+}
+
+.commit-info-box {
+  padding-top: 8px;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.v-resize-handle {
+  height: 3px;
+  flex-shrink: 0;
+  cursor: row-resize;
+  background: transparent;
+  position: relative;
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.v-resize-handle::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -5px;
+  bottom: -5px;
+}
+.v-resize-handle:hover {
+  background: var(--accent);
+}
+.commit-branches {
+  color: var(--text-dim);
+  font-size: 11px;
+  margin-top: 6px;
+}
+.commit-branches-label {
+  margin-bottom: 4px;
+}
+.commit-branches-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+.commit-branches-list li {
+  color: var(--text);
+  font-size: 12px;
+}
+.show-all-link {
+  color: var(--accent);
+  cursor: pointer;
+}
+.show-all-link:hover {
+  text-decoration: underline;
+}
+
+.status-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-dim);
+  font-size: 11px;
+  margin: 8px 0 4px;
+}
+
+.file-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.file-list li:hover {
+  background: var(--hover);
+}
+.file-list li.selected {
+  background: var(--selected);
+}
+.file-list .tag {
+  font-size: 10px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+  width: 60px;
+}
+.file-list .file-path {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-list .stage-btn {
+  padding: 0 6px;
+  font-size: 12px;
+}
+.file-list-empty {
+  padding: 10px 4px;
+  color: var(--text-dim);
+  font-size: 12px;
+  text-align: center;
+  cursor: default;
+}
+
+/* Riquadri "In stage" / "Modifiche non in stage": bordo visibile, testata
+   con azione dedicata (Unstage/Stage all) e lista scrollabile al proprio
+   interno, come nei client git di riferimento (SourceTree ecc). */
+.status-box {
+  flex: 1;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin: 6px 0;
+  overflow: hidden;
+}
+.status-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background: var(--bg-input);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.status-box-header button {
+  font-size: 11px;
+  padding: 3px 8px;
+}
+.status-box .file-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.commit-box {
+  flex-shrink: 0;
+  margin-top: 4px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-input);
+}
+.commit-identity {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.commit-box textarea {
+  resize: vertical;
+}
+.commit-push-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+  cursor: pointer;
+  user-select: none;
+}
+.commit-submit-btn {
+  align-self: flex-end;
+}
+
+.diff-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.diff-scroll {
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+  font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 11.5px;
+}
+.diff-empty {
+  color: var(--text-dim);
+  font-size: 12px;
+  padding: 16px 2px;
+}
+.diff-row {
+  display: flex;
+  white-space: pre;
+}
+.diff-line-num {
+  width: 34px;
+  flex-shrink: 0;
+  text-align: right;
+  padding-right: 6px;
+  color: var(--text-dim);
+  user-select: none;
+  opacity: 0.7;
+}
+.diff-content {
+  flex: 1;
+  min-width: 0;
+  padding-left: 6px;
+  border-left: 1px solid var(--border);
+}
+.diff-row.add {
+  background: rgba(79, 214, 122, 0.15);
+}
+.diff-row.add .diff-content {
+  color: #4fd67a;
+}
+.diff-row.del {
+  background: rgba(224, 95, 95, 0.15);
+}
+.diff-row.del .diff-content {
+  color: var(--danger);
+}
+.diff-row.hunk .diff-content {
+  color: var(--accent);
+  border-left: none;
+  padding-left: 12px;
+}
+.diff-row.meta .diff-content {
+  color: var(--text-dim);
+  border-left: none;
+  padding-left: 12px;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  width: 80vw;
+  height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.conflict-body {
+  flex: 1;
+  display: flex;
+  gap: 12px;
+  min-height: 0;
+}
+
+.conflict-file-list {
+  width: 220px;
+  overflow-y: auto;
+  border-right: 1px solid var(--border);
+  padding-right: 8px;
+}
+.conflict-file-list li {
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  word-break: break-all;
+}
+.conflict-file-list li:hover {
+  background: var(--hover);
+}
+.conflict-file-list li.selected {
+  background: var(--selected);
+}
+
+.conflict-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.conflict-editor .hint {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.conflict-editor textarea {
+  flex: 1;
+  font-family: monospace;
+  font-size: 12px;
+  resize: none;
+}
+.conflict-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+}
+
+.context-menu {
+  position: fixed;
+  z-index: 100;
+  background: #1c232c;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px;
+  min-width: 180px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.context-menu-item {
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.context-menu-item:hover {
+  background: var(--selected);
+}
+.context-menu-item.disabled {
+  color: var(--text-dim);
+  cursor: default;
+}
+.context-menu-item.disabled:hover {
+  background: transparent;
+}
+
+.new-branch-dialog {
+  width: auto;
+  height: auto;
+  gap: 10px;
+  display: flex;
+  flex-direction: column;
+}
+.new-branch-dialog input {
+  min-width: 320px;
+}
+
+.clone-dest-row {
+  display: flex;
+  gap: 6px;
+}
+.clone-dest-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.repo-tabs {
+  display: flex;
+  align-items: center;
+  background: var(--bg-dark);
+  border-bottom: 1px solid var(--border);
+  padding: 0 6px;
+  overflow-x: auto;
+}
+.repo-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  font-size: 12px;
+  border-right: 1px solid var(--border);
+  cursor: pointer;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.repo-tab:hover {
+  color: var(--text);
+}
+.repo-tab.active {
+  color: var(--text);
+  background: var(--bg-panel);
+  border-bottom: 2px solid var(--accent);
+}
+.repo-tab .close-tab {
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+}
+.repo-tab .close-tab:hover {
+  color: var(--danger);
+}
+.repo-tab-add {
+  padding: 6px 10px;
+  cursor: pointer;
+  color: var(--text-dim);
+  font-size: 16px;
+}
+.repo-tab-add:hover {
+  color: var(--text);
+}
