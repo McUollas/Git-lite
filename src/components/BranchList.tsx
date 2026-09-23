@@ -43,11 +43,6 @@ function buildBranchTree(list: Branch[]): BranchNode {
 
 const INDENT_BASE = 12;
 const INDENT_STEP = 28;
-// Le voci foglia (branch senza icona cartella) non hanno il prefisso
-// freccia+cartella che invece precede il testo dei gruppi (es. "origin"):
-// riserviamo lo stesso spazio, altrimenti il testo dei branch locali parte
-// più a sinistra rispetto a quello delle cartelle allo stesso livello.
-const LEAF_GUTTER = 34;
 
 function branchTrack(b: Branch) {
   if (!b.ahead && !b.behind) return null;
@@ -126,7 +121,6 @@ function BranchTree({
               style={{ paddingLeft: INDENT_BASE + depth * INDENT_STEP }}
               onContextMenu={(e) => onContextMenu(e, b)}
             >
-              <span className="branch-leaf-gutter" style={{ width: LEAF_GUTTER }} />
               <span className="branch-name">
                 {b.is_current ? "● " : ""}
                 {n.name}

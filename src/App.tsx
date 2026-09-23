@@ -616,7 +616,7 @@ export default function App() {
         <ResizeBorders />
         <div className="empty-state">
           <h1>Git-Lite</h1>
-          <p>Apri o clona una repository per iniziare.</p>
+          <p>Apri o clona un repository per iniziare.</p>
           <div className="empty-state-actions">
             <button onClick={pickRepo}>Apri repository...</button>
             <button onClick={() => setShowCloneDialog(true)}>Clona repository...</button>
@@ -704,7 +704,11 @@ export default function App() {
             className="toolbar-btn"
             onMouseDown={pressEffect}
             onAnimationEnd={clearPressEffect}
-            onClick={() => setShowPushConfirm(true)}
+            onClick={() => {
+              const current = branches.find((b) => b.is_current);
+              if (current && current.has_upstream && current.ahead === 0) return;
+              setShowPushConfirm(true);
+            }}
             disabled={busy}
           >
             <IconPush />

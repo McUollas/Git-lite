@@ -207,6 +207,7 @@ pub struct Branch {
     is_remote: bool,
     ahead: u32,
     behind: u32,
+    has_upstream: bool,
 }
 
 // Estrae i conteggi da un valore %(upstream:track) tipo "[ahead 2, behind 4]",
@@ -236,15 +237,16 @@ pub fn get_branches(state: State<RepoState>) -> Result<Vec<Branch>, String> {
         &[
             "branch",
             "-a",
-            "--format=%(HEAD)|%(refname:short)|%(refname)|%(upstream:track)",
+            "--format=%(HEAD)|%(refname:short)|%(refname)|%(upstream)|%(upstream:track)",
         ],
     )?;
     let mut branches = Vec::new();
     for line in out.lines() {
-        let mut parts = line.splitn(4, '|');
+        let mut parts = line.splitn(5, '|');
         let head = parts.next().unwrap_or("");
         let name = parts.next().unwrap_or("").to_string();
         let full_refname = parts.next().unwrap_or("");
+        let upstream = parts.next().unwrap_or("");
         let track = parts.next().unwrap_or("");
         // refs/remotes/<remote>/HEAD è il puntatore al branch di default del
         // remote, non un branch vero: git lo abbrevia in "<remote>" (senza
@@ -259,6 +261,7 @@ pub fn get_branches(state: State<RepoState>) -> Result<Vec<Branch>, String> {
             name,
             ahead,
             behind,
+            has_upstream: !upstream.trim().is_empty(),
         });
     }
     Ok(branches)

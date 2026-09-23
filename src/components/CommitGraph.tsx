@@ -226,7 +226,7 @@ export function CommitGraph({
         <h2>History</h2>
         {searchBar}
         <div className="graph-empty">
-          Nessun commit da mostrare. Se la repository ha già dei commit,
+          Nessun commit da mostrare. Se il repository ha già dei commit,
           controlla il messaggio di errore in alto: potrebbe essere un
           problema nel leggere la history da git.
         </div>

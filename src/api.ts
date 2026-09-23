@@ -17,6 +17,7 @@ export interface Branch {
   is_remote: boolean;
   ahead: number;
   behind: number;
+  has_upstream: boolean;
 }
 
 export interface Commit {
