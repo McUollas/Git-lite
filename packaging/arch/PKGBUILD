@@ -1,0 +1,17 @@
+# Maintainer: McUollas
+pkgname=git-lite-bin
+pkgver=0.2.11
+pkgrel=1
+pkgdesc="A Tauri App"
+arch=('x86_64')
+url="https://github.com/McUollas/Git-lite"
+license=('custom')
+depends=('webkit2gtk-4.1' 'gtk3')
+provides=('git-lite')
+conflicts=('git-lite')
+source=("https://github.com/McUollas/Git-lite/releases/download/v${pkgver}/Git-Lite_${pkgver}_amd64.tar.gz")
+sha256sums=('6cc3a80cbb88a497c8646dbbd5d3bf092202ed3e1d3d6a38789a3c605afbb861')
+
+package() {
+    cp -r "${srcdir}/usr" "${pkgdir}/usr"
+}
