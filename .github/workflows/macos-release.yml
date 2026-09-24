@@ -6,6 +6,11 @@ on:
       - .github/workflows/macos-release.yml
       - package.json
       - package-lock.json
+      - index.html
+      - vite.config.ts
+      - tsconfig.json
+      - tsconfig.node.json
+      - public/**
       - src/**
       - src-tauri/**
   release:
