@@ -1,0 +1,80 @@
+name: macOS package
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/macos-release.yml
+      - package.json
+      - package-lock.json
+      - index.html
+      - vite.config.ts
+      - tsconfig.json
+      - tsconfig.node.json
+      - public/**
+      - src/**
+      - src-tauri/**
+  release:
+    types:
+      - published
+
+permissions:
+  contents: read
+
+jobs:
+  macos-pr-package:
+    if: github.event_name == 'pull_request'
+    runs-on: macos-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - run: npm ci
+
+      - uses: tauri-apps/tauri-action@action-v1.0.0
+        with:
+          uploadUpdaterJson: false
+          uploadWorkflowArtifacts: true
+          args: --target universal-apple-darwin --bundles dmg
+
+  macos-release-package:
+    if: github.event_name == 'release'
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - run: npm ci
+
+      - uses: tauri-apps/tauri-action@action-v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          releaseId: ${{ github.event.release.id }}
+          uploadUpdaterJson: false
+          args: --target universal-apple-darwin --bundles dmg
