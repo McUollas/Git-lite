@@ -25,7 +25,8 @@ export function CredentialDialog({ action, branch, onConfirm, onCancel }: Props)
         </h2>
         <p className="hint">
           Il remote è HTTP/HTTPS e richiede autenticazione. Le credenziali vengono
-          usate solo per questa operazione, non vengono salvate.
+          salvate (nel portachiavi di sistema quando disponibile) così non verranno
+          richieste di nuovo per le prossime operazioni su questo repository.
         </p>
         <input
           autoFocus

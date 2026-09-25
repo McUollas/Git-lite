@@ -98,8 +98,8 @@ export const api = {
     invoke<string>("push_with_credentials", { branch, username, password }),
   pullWithCredentials: (branch: string, username: string, password: string) =>
     invoke<string>("pull_with_credentials", { branch, username, password }),
-  cloneRepo: (url: string, destDir: string) =>
-    invoke<string>("clone_repo", { url, destDir }),
+  cloneRepo: (url: string, destDir: string, username?: string, password?: string) =>
+    invoke<string>("clone_repo", { url, destDir, username, password }),
   getDiff: (path: string, staged: boolean) =>
     invoke<string>("get_diff", { path, staged }),
   getLogGraph: (limit: number, allBranches: boolean) =>

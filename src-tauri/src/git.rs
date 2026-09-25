@@ -394,10 +394,31 @@ fn remote_url_for_credentials(repo: &PathBuf) -> Result<String, String> {
     Ok(url)
 }
 
+// Cerca git-credential-libsecret in tutti i posti in cui può trovarsi:
+// nell'exec-path di git (dove lo installano Fedora/Debian, pronto all'uso)
+// oppure nella cartella sorgente che usa Arch Linux, dove l'utente deve
+// compilarlo a mano ("cd /usr/share/git/credential/libsecret && sudo make")
+// e il binario risultante NON finisce nell'exec-path: va referenziato con
+// il percorso assoluto, che git accetta direttamente come credential.helper.
+fn find_libsecret_helper() -> Option<String> {
+    let mut candidates = vec![PathBuf::from(
+        "/usr/share/git/credential/libsecret/git-credential-libsecret",
+    )];
+    if let Ok(out) = Command::new("git").arg("--exec-path").output() {
+        let exec_path = String::from_utf8_lossy(&out.stdout).trim().to_string();
+        if !exec_path.is_empty() {
+            candidates.insert(0, PathBuf::from(exec_path).join("git-credential-libsecret"));
+        }
+    }
+    candidates
+        .into_iter()
+        .find(|p| p.exists())
+        .map(|p| p.to_string_lossy().to_string())
+}
+
 // Se non è già configurato un credential.helper globale, ne imposta uno che
-// salva le credenziali nel portachiavi di sistema (libsecret: GNOME Keyring o
-// KWallet via Secret Service), invece di lasciarle solo in memoria per una
-// singola invocazione. Non tocca la scelta dell'utente se ne ha già una.
+// salva le credenziali invece di lasciarle solo in memoria per una singola
+// invocazione. Non tocca la scelta dell'utente se ne ha già una.
 fn ensure_credential_helper() {
     let already_set = Command::new("git")
         .args(["config", "--global", "--get", "credential.helper"])
@@ -407,18 +428,32 @@ fn ensure_credential_helper() {
     if already_set {
         return;
     }
-    let exec_path = Command::new("git")
-        .arg("--exec-path")
-        .output()
-        .ok()
-        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string());
-    let has_libsecret = exec_path
-        .as_deref()
-        .map(|p| PathBuf::from(p).join("git-credential-libsecret").exists())
-        .unwrap_or(false);
-    if has_libsecret {
+    // Preferito: portachiavi di sistema (GNOME Keyring o KWallet via Secret
+    // Service), persiste indefinitamente ed è cifrato a riposo.
+    if let Some(helper) = find_libsecret_helper() {
         let _ = Command::new("git")
-            .args(["config", "--global", "credential.helper", "libsecret"])
+            .args(["config", "--global", "credential.helper", &helper])
+            .status();
+        return;
+    }
+    // Fallback: su molte distro (es. Arch out-of-the-box) libsecret non è
+    // disponibile finché l'utente non lo compila a mano, e senza NESSUN
+    // helper configurato git non salva mai nulla, quindi le credenziali
+    // vengono richieste ad ogni singola operazione. "cache" è incluso in
+    // ogni installazione di git (nessun pacchetto extra richiesto) e le
+    // tiene in memoria in un demone locale: non è persistente quanto un
+    // portachiavi, ma sopravvive finché il sistema resta acceso invece di
+    // scomparire dopo un solo comando. Non supportato su Windows (richiede
+    // socket Unix), dove però Git for Windows configura già "manager" di
+    // default, quindi questo ramo non viene raggiunto.
+    if !cfg!(target_os = "windows") {
+        let _ = Command::new("git")
+            .args([
+                "config",
+                "--global",
+                "credential.helper",
+                "cache --timeout=100000000",
+            ])
             .status();
     }
 }
@@ -479,9 +514,25 @@ pub fn pull_with_credentials(
 }
 
 #[tauri::command(async)]
-pub fn clone_repo(url: String, dest_dir: String) -> Result<String, String> {
+pub fn clone_repo(
+    url: String,
+    dest_dir: String,
+    username: Option<String>,
+    password: Option<String>,
+) -> Result<String, String> {
     let dest = PathBuf::from(&dest_dir);
-    run_git(&dest, &["clone", &url])?;
+    let is_http = url.starts_with("http://") || url.starts_with("https://");
+    let username = username.filter(|s| !s.is_empty());
+    let password = password.filter(|s| !s.is_empty());
+    let has_creds = is_http && username.is_some() && password.is_some();
+
+    let clone_url = if has_creds {
+        inject_credentials(&url, username.as_deref().unwrap(), password.as_deref().unwrap())
+    } else {
+        url.clone()
+    };
+    run_git(&dest, &["clone", &clone_url])?;
+
     let name = url
         .trim_end_matches('/')
         .trim_end_matches(".git")
@@ -489,7 +540,23 @@ pub fn clone_repo(url: String, dest_dir: String) -> Result<String, String> {
         .next()
         .unwrap_or("repository")
         .to_string();
-    dest.join(&name)
+    let repo_path = dest.join(&name);
+
+    if has_creds {
+        // Il clone iniziale non passa da open_repo (che è dove viene
+        // normalmente configurato l'helper): lo facciamo qui, altrimenti le
+        // credenziali appena usate andrebbero perse e richieste di nuovo al
+        // primo push/pull sul repo appena clonato.
+        ensure_credential_helper();
+        store_credentials(
+            &repo_path,
+            &url,
+            username.as_deref().unwrap(),
+            password.as_deref().unwrap(),
+        );
+    }
+
+    repo_path
         .to_str()
         .map(|s| s.to_string())
         .ok_or_else(|| "Percorso di destinazione non valido".to_string())

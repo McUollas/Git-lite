@@ -15,6 +15,7 @@ import { EmptyCherryPickDialog } from "./components/EmptyCherryPickDialog";
 import { CloneDialog } from "./components/CloneDialog";
 import { CredentialDialog } from "./components/CredentialDialog";
 import { RepoTabs } from "./components/RepoTabs";
+import { AddRepoDialog } from "./components/AddRepoDialog";
 import { TitleBar } from "./components/TitleBar";
 import { ResizeBorders } from "./components/ResizeBorders";
 import { basename, errorMessage } from "./utils";
@@ -117,6 +118,7 @@ export default function App() {
   const [emptyCherryPickPrompt, setEmptyCherryPickPrompt] = useState(false);
   const [discardTarget, setDiscardTarget] = useState<string | null>(null);
   const [showCloneDialog, setShowCloneDialog] = useState(false);
+  const [showAddRepoDialog, setShowAddRepoDialog] = useState(false);
   const [credentialPrompt, setCredentialPrompt] = useState<{
     action: "push" | "pull";
     branch: string;
@@ -300,10 +302,10 @@ export default function App() {
     await switchToRepo(path);
   }
 
-  async function cloneRepo(url: string, destDir: string) {
+  async function cloneRepo(url: string, destDir: string, username?: string, password?: string) {
     setBusy(true);
     try {
-      const path = await api.cloneRepo(url, destDir);
+      const path = await api.cloneRepo(url, destDir, username, password);
       setRepos((prev) => (prev.includes(path) ? prev : [...prev, path]));
       await switchToRepo(path);
     } catch (e) {
@@ -360,9 +362,11 @@ export default function App() {
         try {
           await api.push();
         } catch (e) {
-          const authMsg = errorMessage(e);
-          if (isAuthError(authMsg)) {
+          const pushMsg = errorMessage(e);
+          if (isAuthError(pushMsg)) {
             setCredentialPrompt({ action: "push", branch: status.branch });
+          } else if (isPushNoUpstreamError(pushMsg)) {
+            await api.push(false, true);
           } else {
             throw e;
           }
@@ -643,9 +647,9 @@ export default function App() {
           {showCloneDialog && (
             <CloneDialog
               onCancel={() => setShowCloneDialog(false)}
-              onConfirm={(url, dest) => {
+              onConfirm={(url, dest, username, password) => {
                 setShowCloneDialog(false);
-                cloneRepo(url, dest);
+                cloneRepo(url, dest, username, password);
               }}
             />
           )}
@@ -663,8 +667,7 @@ export default function App() {
         active={activeRepo}
         onSelect={switchToRepo}
         onClose={closeRepoTab}
-        onAdd={pickRepo}
-        onClone={() => setShowCloneDialog(true)}
+        onAdd={() => setShowAddRepoDialog(true)}
       />
       <div className="topbar">
         <span className="repo-path" />
@@ -951,10 +954,29 @@ export default function App() {
       {showCloneDialog && (
         <CloneDialog
           onCancel={() => setShowCloneDialog(false)}
-          onConfirm={(url, dest) => {
+          onConfirm={(url, dest, username, password) => {
             setShowCloneDialog(false);
-            cloneRepo(url, dest);
+            cloneRepo(url, dest, username, password);
           }}
+        />
+      )}
+      {showAddRepoDialog && (
+        <AddRepoDialog
+          recentRepos={recentRepos}
+          onCancel={() => setShowAddRepoDialog(false)}
+          onPick={() => {
+            setShowAddRepoDialog(false);
+            pickRepo();
+          }}
+          onClone={() => {
+            setShowAddRepoDialog(false);
+            setShowCloneDialog(true);
+          }}
+          onOpenRecent={(path) => {
+            setShowAddRepoDialog(false);
+            openRecent(path);
+          }}
+          onRemoveRecent={removeRecent}
         />
       )}
       {credentialPrompt && (

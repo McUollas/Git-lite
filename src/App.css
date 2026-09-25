@@ -1242,6 +1242,17 @@ ul {
   min-width: 0;
 }
 
+.add-repo-dialog {
+  align-items: center;
+  text-align: center;
+}
+.add-repo-dialog .empty-state-actions {
+  justify-content: center;
+}
+.add-repo-dialog .recent-repos {
+  text-align: left;
+}
+
 .repo-tabs {
   display: flex;
   align-items: center;
@@ -1283,6 +1294,7 @@ ul {
   cursor: pointer;
   color: var(--text-dim);
   font-size: 20px;
+  font-weight: 700;
   display: flex;
   align-items: center;
 }

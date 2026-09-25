@@ -1,5 +1,4 @@
 import { basename } from "../utils";
-import { IconClone } from "./Icons";
 
 interface Props {
   repos: string[];
@@ -7,10 +6,9 @@ interface Props {
   onSelect: (path: string) => void;
   onClose: (path: string) => void;
   onAdd: () => void;
-  onClone: () => void;
 }
 
-export function RepoTabs({ repos, active, onSelect, onClose, onAdd, onClone }: Props) {
+export function RepoTabs({ repos, active, onSelect, onClose, onAdd }: Props) {
   return (
     <div className="repo-tabs">
       {repos.map((path) => (
@@ -32,11 +30,8 @@ export function RepoTabs({ repos, active, onSelect, onClose, onAdd, onClone }: P
           </span>
         </div>
       ))}
-      <div className="repo-tab-add" onClick={onAdd} title="Apri repository">
+      <div className="repo-tab-add" onClick={onAdd} title="Apri o clona repository">
         +
-      </div>
-      <div className="repo-tab-add" onClick={onClone} title="Clona repository">
-        <IconClone size={18} />
       </div>
     </div>
   );
