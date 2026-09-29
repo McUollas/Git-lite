@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
+import { check, Update } from "@tauri-apps/plugin-updater";
 import { api, Branch, Commit, CommitDetail, Edge, Identity, StatusResult } from "./api";
 import { BranchList } from "./components/BranchList";
 import { StatusPanel } from "./components/StatusPanel";
@@ -16,6 +17,7 @@ import { CloneDialog } from "./components/CloneDialog";
 import { CredentialDialog } from "./components/CredentialDialog";
 import { RepoTabs } from "./components/RepoTabs";
 import { AddRepoDialog } from "./components/AddRepoDialog";
+import { UpdateDialog } from "./components/UpdateDialog";
 import { TitleBar } from "./components/TitleBar";
 import { ResizeBorders } from "./components/ResizeBorders";
 import { basename, errorMessage } from "./utils";
@@ -123,6 +125,17 @@ export default function App() {
     action: "push" | "pull";
     branch: string;
   } | null>(null);
+  const [pendingUpdate, setPendingUpdate] = useState<Update | null>(null);
+
+  // Controllo aggiornamenti all'avvio: silenzioso se non c'è nulla di nuovo
+  // o se il check fallisce (es. offline, o build senza endpoint configurato).
+  useEffect(() => {
+    check()
+      .then((update) => {
+        if (update?.available) setPendingUpdate(update);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     function onMove(e: MouseEvent) {
@@ -653,6 +666,9 @@ export default function App() {
               }}
             />
           )}
+          {pendingUpdate && (
+            <UpdateDialog update={pendingUpdate} onClose={() => setPendingUpdate(null)} />
+          )}
         </div>
       </div>
     );
@@ -986,6 +1002,9 @@ export default function App() {
           onCancel={() => setCredentialPrompt(null)}
           onConfirm={submitCredentials}
         />
+      )}
+      {pendingUpdate && (
+        <UpdateDialog update={pendingUpdate} onClose={() => setPendingUpdate(null)} />
       )}
     </div>
   );
