@@ -183,7 +183,7 @@ export default function App() {
 
   useEffect(() => {
     if (!message || message.kind === "loading") return;
-    const timer = setTimeout(() => setMessage(null), 6000);
+    const timer = setTimeout(() => setMessage(null), 3000);
     return () => clearTimeout(timer);
   }, [message]);
 
