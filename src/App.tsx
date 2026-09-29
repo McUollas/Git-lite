@@ -126,6 +126,7 @@ export default function App() {
     branch: string;
   } | null>(null);
   const [pendingUpdate, setPendingUpdate] = useState<Update | null>(null);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
 
   // Controllo aggiornamenti all'avvio: silenzioso se non c'è nulla di nuovo
   // o se il check fallisce (es. offline, o build senza endpoint configurato).
@@ -135,6 +136,25 @@ export default function App() {
         if (update?.available) setPendingUpdate(update);
       })
       .catch(() => {});
+  }, []);
+
+  // Controllo aggiornamenti su richiesta esplicita dell'utente (dal popup
+  // della titlebar): a differenza di quello silenzioso all'avvio, qui va
+  // sempre dato un riscontro, anche quando non c'è nulla di nuovo.
+  const checkForUpdatesManually = useCallback(async () => {
+    setCheckingUpdate(true);
+    try {
+      const update = await check();
+      if (update?.available) {
+        setPendingUpdate(update);
+      } else {
+        showSuccess("Hai già l'ultima versione installata.");
+      }
+    } catch (e) {
+      showError(errorMessage(e));
+    } finally {
+      setCheckingUpdate(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -629,7 +649,7 @@ export default function App() {
   if (repos.length === 0) {
     return (
       <div className="app">
-        <TitleBar />
+        <TitleBar onCheckForUpdates={checkForUpdatesManually} checkingUpdate={checkingUpdate} />
         <ResizeBorders />
         <div className="empty-state">
           <h1>Git-Lite</h1>
@@ -676,7 +696,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <TitleBar />
+      <TitleBar onCheckForUpdates={checkForUpdatesManually} checkingUpdate={checkingUpdate} />
       <ResizeBorders />
       <RepoTabs
         repos={repos}
