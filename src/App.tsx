@@ -20,7 +20,7 @@ import { AddRepoDialog } from "./components/AddRepoDialog";
 import { UpdateDialog } from "./components/UpdateDialog";
 import { TitleBar } from "./components/TitleBar";
 import { ResizeBorders } from "./components/ResizeBorders";
-import { basename, errorMessage } from "./utils";
+import { basename, errorMessage, humanizeGitError } from "./utils";
 import { IconFetch, IconUpdate, IconPull, IconPush } from "./components/Icons";
 
 const RECENT_KEY = "git-lite-recent-repos";
@@ -83,7 +83,7 @@ export default function App() {
     text: string;
     kind: "success" | "error" | "loading";
   } | null>(null);
-  const showError = (text: string) => setMessage({ text, kind: "error" });
+  const showError = (text: string) => setMessage({ text: humanizeGitError(text), kind: "error" });
   const showSuccess = (text: string) => setMessage({ text, kind: "success" });
   const showLoading = (text: string) => setMessage({ text, kind: "loading" });
   const [recentRepos, setRecentRepos] = useState<string[]>(loadRecent());
@@ -217,7 +217,10 @@ export default function App() {
     }
 
     if (errors.length > 0) {
-      showError(errors.join("\n"));
+      // Ogni riga va tradotta singolarmente prima di unirle: showError()
+      // umanizza l'intero testo passato, e più errori diversi uniti in un
+      // unico blocco farebbero match solo sulla prima regola riconosciuta.
+      setMessage({ text: [...new Set(errors.map(humanizeGitError))].join("\n"), kind: "error" });
     }
   }, [activeRepo, showAllBranches]);
 
