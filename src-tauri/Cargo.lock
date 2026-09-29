@@ -1352,7 +1352,7 @@ dependencies = [
 
 [[package]]
 name = "git-lite"
-version = "0.2.12"
+version = "1.0.0"
 dependencies = [
  "serde",
  "serde_json",
