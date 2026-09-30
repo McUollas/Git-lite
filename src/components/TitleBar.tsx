@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { getVersion } from "@tauri-apps/api/app";
+import { platform } from "@tauri-apps/plugin-os";
 import { IconMinimize, IconMaximize, IconClose } from "./Icons";
 import appIcon from "../assets/app-icon.png";
 
@@ -11,13 +12,58 @@ interface Props {
   checkingUpdate: boolean;
 }
 
+function MacTrafficLights() {
+  return (
+    <div className="mac-traffic-lights">
+      <button
+        className="mac-traffic-light mac-traffic-close"
+        onClick={() => appWindow.close()}
+        aria-label="Chiudi"
+      >
+        <svg viewBox="0 0 8 8">
+          <path d="M1.5,1.5 L6.5,6.5 M6.5,1.5 L1.5,6.5" />
+        </svg>
+      </button>
+      <button
+        className="mac-traffic-light mac-traffic-minimize"
+        onClick={() => appWindow.minimize()}
+        aria-label="Minimizza"
+      >
+        <svg viewBox="0 0 8 8">
+          <path d="M1.2,4 L6.8,4" />
+        </svg>
+      </button>
+      <button
+        className="mac-traffic-light mac-traffic-maximize"
+        onClick={() => appWindow.toggleMaximize()}
+        aria-label="Massimizza"
+      >
+        <svg viewBox="0 0 8 8">
+          <path d="M1.3,4 L4.5,1 M1.3,1 L1.3,3 M1.3,1 L3.3,1" />
+          <path d="M6.7,4 L3.5,7 M6.7,7 L6.7,5 M6.7,7 L4.7,7" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 export function TitleBar({ onCheckForUpdates, checkingUpdate }: Props) {
   const [version, setVersion] = useState("");
   const [showPopup, setShowPopup] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
+  // Ogni sistema operativo ha una convenzione diversa per i pulsanti finestra:
+  // niente lo impone lato Tauri (decorations è false ovunque, la barra è
+  // interamente disegnata da noi), quindi va replicata a mano in base alla
+  // piattaforma rilevata a runtime.
+  const [isMac, setIsMac] = useState(false);
 
   useEffect(() => {
     getVersion().then(setVersion).catch(() => {});
+    try {
+      setIsMac(platform() === "macos");
+    } catch {
+      // fuori dal runtime Tauri (es. anteprima browser): resta sullo stile di default
+    }
   }, []);
 
   useEffect(() => {
@@ -32,9 +78,9 @@ export function TitleBar({ onCheckForUpdates, checkingUpdate }: Props) {
   }, [showPopup]);
 
   return (
-    <div className="titlebar" data-tauri-drag-region>
+    <div className={"titlebar" + (isMac ? " titlebar-mac" : "")} data-tauri-drag-region>
       <span className="titlebar-spacer" data-tauri-drag-region>
-        <img className="titlebar-icon" src={appIcon} alt="" />
+        {isMac ? <MacTrafficLights /> : <img className="titlebar-icon" src={appIcon} alt="" />}
       </span>
       <span className="titlebar-title-group">
         <span
@@ -68,27 +114,31 @@ export function TitleBar({ onCheckForUpdates, checkingUpdate }: Props) {
         )}
       </span>
       <div className="titlebar-controls">
-        <button
-          className="titlebar-btn"
-          onClick={() => appWindow.minimize()}
-          aria-label="Minimizza"
-        >
-          <IconMinimize />
-        </button>
-        <button
-          className="titlebar-btn"
-          onClick={() => appWindow.toggleMaximize()}
-          aria-label="Massimizza"
-        >
-          <IconMaximize />
-        </button>
-        <button
-          className="titlebar-btn titlebar-close"
-          onClick={() => appWindow.close()}
-          aria-label="Chiudi"
-        >
-          <IconClose />
-        </button>
+        {!isMac && (
+          <>
+            <button
+              className="titlebar-btn"
+              onClick={() => appWindow.minimize()}
+              aria-label="Minimizza"
+            >
+              <IconMinimize />
+            </button>
+            <button
+              className="titlebar-btn"
+              onClick={() => appWindow.toggleMaximize()}
+              aria-label="Massimizza"
+            >
+              <IconMaximize />
+            </button>
+            <button
+              className="titlebar-btn titlebar-close"
+              onClick={() => appWindow.close()}
+              aria-label="Chiudi"
+            >
+              <IconClose />
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
