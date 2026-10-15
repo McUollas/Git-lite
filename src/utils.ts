@@ -135,3 +135,37 @@ export function formatRelativeDate(raw: string): string {
   if (commitDate.getTime() === yesterday.getTime()) return `Ieri ${timePart ?? ""}`.trim();
   return timePart ? `${datePart} ${timePart}` : datePart;
 }
+
+// Riduce l'output grezzo di git (fetch/pull/push) a una frase chiara.
+export function summarizeGitOutput(raw: string, label?: string): string {
+  const out = raw ?? "";
+  const action = (label ?? "").toLowerCase();
+  const isPush = action.startsWith("push");
+  const isFetch = action.startsWith("fetch");
+
+  if (/everything up-to-date/i.test(out)) return "Push: nessun commit da inviare, tutto già aggiornato.";
+  if (/already up to date/i.test(out)) return "Già aggiornato: nessuna novità dal remote.";
+
+  const files = out.match(/(\d+) files? changed/i);
+  const nFiles = files ? Number(files[1]) : 0;
+  const plural = (n: number, s: string, p: string) => `${n} ${n === 1 ? s : p}`;
+
+  if (isPush || /^\s*To\s+\S+/m.test(out)) {
+    const branch = out.match(/(?:->|→)\s+(\S+)\s*$/m)?.[1];
+    return branch ? `Push completato su "${branch}".` : "Push completato.";
+  }
+  if (/conflict/i.test(out) && /automatic merge failed/i.test(out)) {
+    return "Aggiornamento con conflitti: risolvili dalla sezione Conflitti.";
+  }
+  if (/fast-forward|merge made|successfully rebased/i.test(out)) {
+    return nFiles
+      ? `Aggiornamento completato: ${plural(nFiles, "file modificato", "file modificati")}.`
+      : "Aggiornamento completato.";
+  }
+  if (isFetch) {
+    const updated = (out.match(/^\s*[+*\sa-z!-]\s*\S+\.\.\.?\S+\s|\[new (branch|tag)\]/gim) ?? []).length;
+    return updated ? `Fetch completato: ${plural(updated, "riferimento aggiornato", "riferimenti aggiornati")}.` : "Fetch completato: nessuna novità.";
+  }
+  if (action.startsWith("pull")) return nFiles ? `Pull completato: ${plural(nFiles, "file modificato", "file modificati")}.` : "Pull completato.";
+  return "Operazione completata.";
+}

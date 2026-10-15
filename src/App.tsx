@@ -20,7 +20,7 @@ import { AddRepoDialog } from "./components/AddRepoDialog";
 import { UpdateDialog } from "./components/UpdateDialog";
 import { TitleBar } from "./components/TitleBar";
 import { ResizeBorders } from "./components/ResizeBorders";
-import { basename, errorMessage, humanizeGitError } from "./utils";
+import { basename, errorMessage, humanizeGitError, summarizeGitOutput } from "./utils";
 import { IconFetch, IconUpdate, IconPull, IconPush } from "./components/Icons";
 
 const RECENT_KEY = "git-lite-recent-repos";
@@ -468,7 +468,7 @@ export default function App() {
     if (loadingLabel) showLoading(loadingLabel);
     try {
       const out = await fn();
-      showSuccess(out || "Operazione completata");
+      showSuccess(summarizeGitOutput(out, loadingLabel));
     } catch (e) {
       const msg = errorMessage(e);
       if (onAuthFailure && isAuthError(msg)) {

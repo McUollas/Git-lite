@@ -662,7 +662,7 @@ ul {
   padding: 3px 2px 3px 6px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 20px;
 }
 .branch-list li:hover {
@@ -670,6 +670,8 @@ ul {
 }
 .branch-list li.current {
   color: var(--accent);
+  font-size: 15px;
+  font-weight: 600;
 }
 .branch-list .branch-name {
   /* Nessun flex-grow: la riga resta larga quanto il testo, così le
@@ -1044,6 +1046,7 @@ ul {
 }
 
 .file-list li {
+  font-size: 13px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1058,7 +1061,7 @@ ul {
   background: var(--selected);
 }
 .file-list .tag {
-  font-size: 10px;
+  font-size: 13px;
   color: var(--text-dim);
   flex-shrink: 0;
   width: 60px;
@@ -1071,7 +1074,7 @@ ul {
 }
 .file-list .stage-btn {
   padding: 0 6px;
-  font-size: 12px;
+  font-size: 13px;
 }
 .file-list .discard-btn:hover {
   color: var(--danger);
@@ -1080,7 +1083,7 @@ ul {
 .file-list-empty {
   padding: 10px 4px;
   color: var(--text-dim);
-  font-size: 12px;
+  font-size: 13px;
   text-align: center;
   cursor: default;
 }
@@ -1106,11 +1109,11 @@ ul {
   background: var(--bg-input);
   border-bottom: 1px solid var(--border);
   color: var(--text-dim);
-  font-size: 11px;
+  font-size: 13px;
   flex-shrink: 0;
 }
 .status-box-header button {
-  font-size: 11px;
+  font-size: 13px;
   padding: 3px 8px;
 }
 .status-box .file-list {
@@ -1131,7 +1134,7 @@ ul {
   background: var(--bg-input);
 }
 .commit-identity {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-dim);
 }
 .commit-box textarea {
@@ -1141,7 +1144,7 @@ ul {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-dim);
   cursor: pointer;
   user-select: none;
