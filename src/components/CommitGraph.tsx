@@ -262,14 +262,27 @@ export function CommitGraph({
               const y1 = e.from_row * ROW_H + ROW_H / 2;
               const x2 = laneX(e.to_lane);
               const y2 = e.to_row * ROW_H + ROW_H / 2;
-              const color = COLORS[e.from_lane % COLORS.length];
-              const mid = y1 + (y2 - y1) / 2;
+              // Stile IntelliJ/gitk: il tratto verticale sta sempre nella corsia più
+              // a destra (il ramo laterale), e il raccordo diagonale dura una sola
+              // riga, accanto al commit sulla corsia più a sinistra. Niente curve
+              // lunghe che attraversano le altre linee.
+              const sideLane = Math.max(e.from_lane, e.to_lane);
+              const color = COLORS[sideLane % COLORS.length];
+              let d: string;
+              if (e.from_lane === e.to_lane || y2 - y1 <= ROW_H) {
+                d = `M ${x1} ${y1} L ${x2} ${y2}`;
+              } else if (e.from_lane < e.to_lane) {
+                d = `M ${x1} ${y1} L ${x2} ${y1 + ROW_H} L ${x2} ${y2}`;
+              } else {
+                d = `M ${x1} ${y1} L ${x1} ${y2 - ROW_H} L ${x2} ${y2}`;
+              }
               return (
                 <path
                   key={i}
-                  d={`M ${x1} ${y1} C ${x1} ${mid}, ${x2} ${mid}, ${x2} ${y2}`}
+                  d={d}
                   stroke={color}
                   strokeWidth={2}
+                  strokeLinejoin="round"
                   fill="none"
                 />
               );

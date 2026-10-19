@@ -850,10 +850,10 @@ pub fn get_log_graph(
 ) -> Result<LogGraph, String> {
     let repo = current_repo(&state)?;
     let max_count = format!("--max-count={limit}");
-    // --topo-order tiene raggruppati i commit di una stessa linea di
-    // sviluppo invece di intrecciarli per data: con molti branch (specie in
-    // modalità "tutti i branch") è quello che tiene il numero di corsie
-    // contemporaneamente aperte più basso, quindi il grafo più leggibile.
+    // --date-order (come IntelliJ): i commit escono per data, rispettando solo
+    // il vincolo figli-prima-dei-genitori. I rami laterali finiscono accanto al
+    // loro merge invece che in blocchi lontani, quindi le corsie restano poche
+    // e corte. --topo-order, al contrario, lasciava decine di corsie aperte.
     let mut args: Vec<&str> = vec!["log"];
     if all_branches {
         // Solo branch locali + tag: "--all" includerebbe anche ogni
@@ -869,7 +869,7 @@ pub fn get_log_graph(
         // i branch locali, vanificando il filtro "solo il branch in checkout".
         args.push("HEAD");
     }
-    args.push("--topo-order");
+    args.push("--date-order");
     args.push(&max_count);
     args.push("--pretty=format:%H|%P|%D|%s|%an|%ad");
     args.push("--date=format:%d/%m/%Y %H:%M");
